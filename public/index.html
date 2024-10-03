@@ -5,11 +5,35 @@
   <meta charset="UTF-8">
   <title>2D Multiplayer Hra</title>
   <style>
-    canvas { background: #000; display: block; margin: 0 auto; }
+    body {
+      margin: 0;
+      display: flex;
+      background-color: #000;
+      color: white;
+      font-family: Arial, sans-serif;
+      height: 100vh; /* Nastavení výšky těla na výšku viewportu */
+    }
+    canvas {
+      background: #000;
+      display: block;
+      margin: 0;
+      width: 80%;  /* Plátno zabírá 80% šířky */
+      height: 100%;   /* Plátno zabírá celou výšku */
+    }
+    #scoreBoard {
+      margin-left: 10px;
+      padding: 10px;
+      width: 150px;
+      overflow-y: auto;
+    }
+    #scoreBoard h2 {
+      margin-top: 0;
+    }
   </style>
 </head>
 <body>
-  <canvas id="gameCanvas" width="800" height="600"></canvas>
+  <canvas id="gameCanvas"></canvas>
+  <div id="scoreBoard"></div>
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js"></script>
 </body>

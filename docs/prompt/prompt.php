@@ -13,10 +13,12 @@ require_once __DIR__ . "/PrompterHelper.php";
 ))->dumpWorkspace();
 ?>
 
-Máme takovou hru v Javascriptu.
+Máme takovou hru v Javascriptu. Funguje výborně.
 
-Trojúhleník který znározňuje raketu je otočený o 90 stupňů doleva. Prosím narovnat.
-Potřebujeme aby fungovala i šipka zpět.
-Na pozadí bychom chtěli kvůli orientace v prostoru náhodně rozmístěné hvězdy, což by byly žlutá kolečka o velikostech 3-5 bodů.
-Pozice hvězd bude na serveru a přenese se pouze po připojení. 
-Kamera by měla sledovat raketu a svět by tím pádem měl být neohraničený.
+Chtěli bychom aby herní canvas zabíral celou výšku viewportu a 80% šířky.
+
+Naváděcí šipka, která ukazuje pozici soupeře, který se nevleze na canvas by měla mít alfu 50%.
+
+Omezení vzdálenosti střely je implementováno špatně, takto funguje střílení jen v určité oblasti.
+Mělo by to být udělané tak, že střela bude mít definovaný dostřel třeba 1000 a při vystřelení si zapamatuje souřadnice, 
+odkud byla vypálena a jakmile její pozice bude vzdálená od místa vypálení víc než 1000 tak střela zanikne.
