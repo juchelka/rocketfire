@@ -9,15 +9,15 @@ pbpaste | php update.php
 
 class PrompterHelper
 {
-    private array $ignoredDirs = [];
+    private array $ignoredPaths = [];
     private string $root;
 
-    public function __construct(string $root, $ignoreDirs = [])
+    public function __construct(string $root, $ignorePaths = [])
     {
         $this->root = $this->canonicalizePath($root);
-        foreach ($ignoreDirs as $dir) 
+        foreach ($ignorePaths as $path) 
         {
-            $this->addIgnoredDir($dir);
+            $this->addIgnoredPath($path);
         }
         
         echo "Workspace root: " . $this->root . "\n";
@@ -27,14 +27,15 @@ class PrompterHelper
     {
         echo "\nDirectory structure:\n";
         echo $this->tree() . "\n";
-        echo "contains there files:\n";
+        echo "contains these files:\n";
         echo $this->fullFiles();
         echo "\n\n";
     }
 
-    public function addIgnoredDir(string $dir): void
+    public function addIgnoredPath(string $path): void
     {
-        $this->ignoredDirs[] = $this->canonicalizePath($this->root . DIRECTORY_SEPARATOR . $dir);
+        $canonicalPath = $this->canonicalizePath($this->root . DIRECTORY_SEPARATOR . $path);
+        $this->ignoredPaths[] = $canonicalPath;
     }
 
     public function tree(string $dir = null): string
@@ -45,7 +46,11 @@ class PrompterHelper
         foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory)) as $file) {
             $relativePath = str_replace($this->root . DIRECTORY_SEPARATOR, '', $file->getPathname());
 
-            if ($file->isDir() || $this->isIgnored($file->getPathname())) {
+            if ($file->isDir()) {
+                continue;
+            }
+
+            if ($this->isIgnored($file->getPathname())) {
                 continue;
             }
 
@@ -63,7 +68,11 @@ class PrompterHelper
         foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory)) as $file) {
             $relativePath = str_replace($this->root . DIRECTORY_SEPARATOR, '', $file->getPathname());
             
-            if ($file->isDir() || $this->isIgnored($file->getPathname())) {
+            if ($file->isDir()) {
+                continue;
+            }
+
+            if ($this->isIgnored($file->getPathname())) {
                 continue;
             }
 
@@ -77,9 +86,13 @@ class PrompterHelper
     {
         $canonicalPath = $this->canonicalizePath($path);
 
-        foreach ($this->ignoredDirs as $ignoredDir) {
-            if (str_starts_with($canonicalPath, $ignoredDir)) {
-                return true;
+        foreach ($this->ignoredPaths as $ignoredPath) {
+            if ($canonicalPath === $ignoredPath) {
+                return true; // Exact match (file)
+            }
+
+            if (is_dir($ignoredPath) && str_starts_with($canonicalPath, $ignoredPath . DIRECTORY_SEPARATOR)) {
+                return true; // Directory match
             }
         }
         return false;

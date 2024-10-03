@@ -3,21 +3,33 @@ const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
 
-// Inicializace serveru
+// Initialize server
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
 
-// Statické soubory
+// Static files
 app.use(express.static('public'));
 
-// Herní stav
+// Game state
 let players = {};
 
-io.on('connection', (socket) => {
-  console.log(`Nový hráč připojen: ${socket.id}`);
+// Star positions
+let stars = [];
 
-  // Přidání nového hráče do hry
+// Generate random stars
+for (let i = 0; i < 100; i++) {
+  stars.push({
+    x: Math.random() * 2000 - 1000,
+    y: Math.random() * 2000 - 1000,
+    size: Math.random() * 2 + 3, // Size between 3 and 5
+  });
+}
+
+io.on('connection', (socket) => {
+  console.log(`New player connected: ${socket.id}`);
+
+  // Add new player to the game
   players[socket.id] = {
     x: Math.random() * 800,
     y: Math.random() * 600,
@@ -25,13 +37,15 @@ io.on('connection', (socket) => {
     speed: 0,
   };
 
-  // Odeslání aktuálního stavu novému hráči
+  // Send current state to the new player
   socket.emit('updatePlayers', players);
+  socket.emit('starPositions', stars);
+  socket.emit('yourId', socket.id);
 
-  // Informování ostatních hráčů o novém hráči
+  // Inform other players about the new player
   socket.broadcast.emit('updatePlayers', players);
 
-  // Přijetí vstupu od klienta
+  // Receive input from client
   socket.on('movement', (data) => {
     const player = players[socket.id];
     if (player) {
@@ -45,22 +59,26 @@ io.on('connection', (socket) => {
         player.x += Math.cos(player.angle) * 5;
         player.y += Math.sin(player.angle) * 5;
       }
+      if (data.down) {
+        player.x -= Math.cos(player.angle) * 5;
+        player.y -= Math.sin(player.angle) * 5;
+      }
       players[socket.id] = player;
 
-      // Odeslání aktualizovaného stavu všem hráčům
+      // Send updated state to all players
       io.emit('updatePlayers', players);
     }
   });
 
-  // Odpojení hráče
+  // Player disconnects
   socket.on('disconnect', () => {
-    console.log(`Hráč odpojen: ${socket.id}`);
+    console.log(`Player disconnected: ${socket.id}`);
     delete players[socket.id];
     io.emit('updatePlayers', players);
   });
 });
 
-// Spuštění serveru
+// Start server
 server.listen(3000, () => {
-  console.log('Server běží na portu 3000');
+  console.log('Server running on port 3000');
 });
