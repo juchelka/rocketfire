@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
+const { performance } = require('perf_hooks');
 
 // Inicializace serveru
 const app = express();
@@ -16,6 +17,7 @@ app.use(express.static('public'));
 let players = {};
 let projectiles = [];
 let monsters = [];
+let cycleCount = 0;
 
 // Pozice hvězd
 let stars = [];
@@ -88,6 +90,13 @@ io.on('connection', (socket) => {
 
   // Informování ostatních hráčů o novém hráči
   socket.broadcast.emit('updatePlayers', players);
+
+  // Zpracování požadavku na ping
+  socket.on('ping', (startTime) => {
+    const endTime = performance.now();
+    const ping = endTime - startTime;
+    socket.emit('pong', ping);
+  });
 
   // Přijímání vstupu od klienta
   socket.on('movement', (data) => {
@@ -163,6 +172,7 @@ function shootProjectile(player) {
 
 // Herní smyčka
 setInterval(() => {
+  cycleCount++;
   // Pohyb projektilů
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const proj = projectiles[i];
@@ -214,6 +224,12 @@ setInterval(() => {
   io.emit('updateMonsters', monsters);
 
 }, 1000 / 60); // 60krát za sekundu
+
+// Odeslání diagnostických dat každých 5 sekund
+setInterval(() => {
+  io.emit('serverDiagnostics', { cycleCount: cycleCount / 5});
+  cycleCount = 0;
+}, 5000);
 
 // Spuštění serveru
 const PORT = process.env.PORT || 3000;

@@ -11,6 +11,8 @@ let stars = [];
 let myId = null;
 let projectiles = [];
 let monsters = [];
+let ping = 0;
+let cycleCount = 0;
 
 // Funkce pro změnu velikosti plátna
 function resizeCanvas() {
@@ -26,7 +28,7 @@ document.addEventListener('keydown', (event) => {
   if (event.code === 'ArrowLeft') keys.left = true;
   if (event.code === 'ArrowRight') keys.right = true;
   if (event.code === 'ArrowDown') keys.down = true;
-  if (event.code === 'Space' && keys.space !== true) {
+  if (event.code === 'Space') {
     keys.space = true;
     socket.emit('shoot', true); // Zahájit střelbu
   }
@@ -70,6 +72,20 @@ socket.on('yourId', (id) => {
 socket.on('updateMonsters', (serverMonsters) => {
   monsters = serverMonsters;
 });
+
+socket.on('pong', (serverPing) => {
+  ping = serverPing;
+  if (ping < 0) ping = 0; // Ošetření případů s negativním nebo příliš velkým pingem
+});
+
+socket.on('serverDiagnostics', (data) => {
+  cycleCount = data.cycleCount;
+});
+
+// Posílání pingu každou sekundu
+setInterval(() => {
+  socket.emit('ping', performance.now());
+}, 1000);
 
 // Hlavní herní smyčka
 function gameLoop() {
@@ -171,6 +187,12 @@ function gameLoop() {
 
   // Zobrazení skóre
   displayScores();
+
+  // Zobrazení diagnostických dat
+  context.fillStyle = 'white';
+  context.font = '16px Arial';
+  context.fillText(`Ping: ${Math.round(ping)} ms`, 10, 20);
+  context.fillText(`Server: ${cycleCount}/s of 60`, 10, 40);
 
   requestAnimationFrame(gameLoop);
 }
