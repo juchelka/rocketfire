@@ -28,7 +28,7 @@ document.addEventListener('keydown', (event) => {
   if (event.code === 'ArrowLeft') keys.left = true;
   if (event.code === 'ArrowRight') keys.right = true;
   if (event.code === 'ArrowDown') keys.down = true;
-  if (event.code === 'Space') {
+  if (event.code === 'Space' && keys.space !== true) {
     keys.space = true;
     socket.emit('shoot', true); // Zahájit střelbu
   }
