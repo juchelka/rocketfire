@@ -13,6 +13,7 @@ let projectiles = [];
 let monsters = [];
 let ping = 0;
 let cycleCount = 0;
+let timeOffset = 0;
 
 // Funkce pro změnu velikosti plátna
 function resizeCanvas() {
@@ -52,6 +53,34 @@ function sendInput() {
 }
 requestAnimationFrame(sendInput);
 
+// Synchronizace času s použitím RTT
+function synchronizeTime() {
+  const t0 = performance.now();
+  socket.emit('syncTime', t0);
+}
+
+// Synchronizace každých 5 sekund
+setInterval(synchronizeTime, 5000);
+
+// Příjem synchronizovaného času ze serveru
+socket.on('syncTimeResponse', (serverTime, t0) => {
+  const t2 = performance.now();
+  const RTT = t2 - t0;
+  const estimatedServerTime = serverTime + RTT / 2;
+  timeOffset = estimatedServerTime - t2;
+  ping = (t2 - t0) / 2;
+  console.log({
+    t0,
+    t2,
+    delta: t2-t0, 
+    serverTime,
+  });
+});
+
+function getServerTime() {
+  return performance.now() + timeOffset;
+}
+
 // Přijímání aktualizací od serveru
 socket.on('updatePlayers', (serverPlayers) => {
   players = JSON.parse(JSON.stringify(serverPlayers));
@@ -73,19 +102,9 @@ socket.on('updateMonsters', (serverMonsters) => {
   monsters = serverMonsters;
 });
 
-socket.on('pong', (serverPing) => {
-  ping = serverPing;
-  if (ping < 0) ping = 0; // Ošetření případů s negativním nebo příliš velkým pingem
-});
-
 socket.on('serverDiagnostics', (data) => {
   cycleCount = data.cycleCount;
 });
-
-// Posílání pingu každou sekundu
-setInterval(() => {
-  socket.emit('ping', performance.now());
-}, 1000);
 
 // Hlavní herní smyčka
 function gameLoop() {
@@ -191,7 +210,7 @@ function gameLoop() {
   // Zobrazení diagnostických dat
   context.fillStyle = 'white';
   context.font = '16px Arial';
-  context.fillText(`Ping: ${Math.round(ping)} ms`, 10, 20);
+  context.fillText(`Ping: ${ping.toFixed(2)} ms`, 10, 20);
   context.fillText(`Server: ${cycleCount}/s of 60`, 10, 40);
 
   requestAnimationFrame(gameLoop);

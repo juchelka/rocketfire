@@ -91,11 +91,10 @@ io.on('connection', (socket) => {
   // Informování ostatních hráčů o novém hráči
   socket.broadcast.emit('updatePlayers', players);
 
-  // Zpracování požadavku na ping
-  socket.on('ping', (startTime) => {
-    const endTime = performance.now();
-    const ping = endTime - startTime;
-    socket.emit('pong', ping);
+  // Zpracování požadavku na synchronizaci času
+  socket.on('syncTime', (t0) => {
+    const t1 = performance.now(); // Použití performance.now() pro vyšší přesnost a nezávislost na lokálním čase
+    socket.emit('syncTimeResponse', t1, t0);
   });
 
   // Přijímání vstupu od klienta
