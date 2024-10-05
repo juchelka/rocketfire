@@ -14,17 +14,19 @@ app.use(express.static('public'));
 // Herní stav
 let players = {};
 let projectiles = [];
+let monsters = [];
 
 // Pozice hvězd
 let stars = [];
 
 // Generování náhodných hvězd
 for (let i = 0; i < 100; i++) {
-  stars.push({
-    x: Math.random() * 2000 - 1000,
-    y: Math.random() * 2000 - 1000,
-    size: Math.random() * 3 + 1, // Velikost mezi 1 a 4
-  });
+  stars.push(createStar());
+}
+
+// Generování příšer
+for (let i = 0; i < 5; i++) {
+  spawnNewMonster();
 }
 
 // Funkce pro generování náhodné pastelové barvy
@@ -35,24 +37,53 @@ function getRandomPastelColor() {
   return `rgb(${r},${g},${b})`;
 }
 
+// Funkce pro generování nové příšery
+function spawnNewMonster() {
+  monsters.push(createMonster());
+}
+
+// Funkce pro vytvoření nové příšery
+function createMonster() {
+  return {
+    x: Math.random() * 2000 - 1000,
+    y: Math.random() * 2000 - 1000,
+    health: 3, // Nová příšera má 3 životy
+  };
+}
+
+// Funkce pro vytvoření nové hvězdy
+function createStar() {
+  return {
+    x: Math.random() * 2000 - 1000,
+    y: Math.random() * 2000 - 1000,
+    size: Math.random() * 3 + 1, // Velikost mezi 1 a 4
+  };
+}
+
+// Funkce pro vytvoření nového projektilu
+function createProjectile(player) {
+  return {
+    x: player.x,
+    y: player.y,
+    startX: player.x,
+    startY: player.y,
+    angle: player.angle,
+    ownerId: player.id,
+  };
+}
+
 io.on('connection', (socket) => {
   console.log(`Nový hráč se připojil: ${socket.id}`);
 
   // Přidání nového hráče do hry
-  players[socket.id] = {
-    x: Math.random() * 800,
-    y: Math.random() * 600,
-    angle: 0,
-    speed: 0,
-    color: getRandomPastelColor(),
-    score: 0
-  };
+  players[socket.id] = createPlayer(socket.id);
 
   // Odeslání aktuálního stavu novému hráči
   socket.emit('updatePlayers', players);
   socket.emit('starPositions', stars);
   socket.emit('yourId', socket.id);
   socket.emit('updateProjectiles', projectiles);
+  socket.emit('updateMonsters', monsters);
 
   // Informování ostatních hráčů o novém hráči
   socket.broadcast.emit('updatePlayers', players);
@@ -75,26 +106,28 @@ io.on('connection', (socket) => {
         player.x -= Math.cos(player.angle) * 5;
         player.y -= Math.sin(player.angle) * 5;
       }
-      players[socket.id] = player;
     }
   });
 
   // Zpracování střelby
-  socket.on('shoot', () => {
+  let shootingInterval = null;
+  socket.on('shoot', (isShooting) => {
     const player = players[socket.id];
-    if (player) {
-      // Počet existujících projektilů hráče
-      const playerProjectiles = projectiles.filter(p => p.ownerId === socket.id);
-      if (playerProjectiles.length < 3) {
-        projectiles.push({
-          x: player.x,
-          y: player.y,
-          startX: player.x, // Uložení počáteční pozice X
-          startY: player.y, // Uložení počáteční pozice Y
-          angle: player.angle,
-          ownerId: socket.id
-        });
+    if (isShooting && player) {
+      // Okamžitě vystřelit první střelu
+      shootProjectile(player);
+      // Zahájit interval pro další střely
+      if (!shootingInterval) {
+        shootingInterval = setInterval(() => {
+          const currentPlayer = players[socket.id];
+          if (currentPlayer) {
+            shootProjectile(currentPlayer);
+          }
+        }, 250); // 4 střely za sekundu (250 ms mezi střelami)
       }
+    } else {
+      clearInterval(shootingInterval);
+      shootingInterval = null;
     }
   });
 
@@ -102,31 +135,59 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log(`Hráč se odpojil: ${socket.id}`);
     delete players[socket.id];
+    if (shootingInterval) {
+      clearInterval(shootingInterval);
+    }
     io.emit('updatePlayers', players);
   });
 });
+
+// Funkce pro vytvoření nového hráče
+function createPlayer(id) {
+  return {
+    id: id,
+    x: Math.random() * 800,
+    y: Math.random() * 600,
+    angle: 0,
+    speed: 0,
+    color: getRandomPastelColor(),
+    score: 0,
+  };
+}
+
+// Funkce pro vystřelení projektilu
+function shootProjectile(player) {
+  projectiles.push(createProjectile(player));
+}
 
 // Herní smyčka
 setInterval(() => {
   // Pohyb projektilů
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const proj = projectiles[i];
-    proj.x += Math.cos(proj.angle) * 20; // Rychlost projektilu
+    proj.x += Math.cos(proj.angle) * 20;
     proj.y += Math.sin(proj.angle) * 20;
 
-    // Kontrola kolize s hráči
-    for (let id in players) {
-      const player = players[id];
-      if (id !== proj.ownerId) {
-        const dx = proj.x - player.x;
-        const dy = proj.y - player.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        if (distance < 15) { // Kolizní rádius
-          // Detekována kolize
-          players[proj.ownerId].score += 1;
-          projectiles.splice(i, 1);
-          break;
+    // Kontrola kolize s příšerami
+    for (let j = monsters.length - 1; j >= 0; j--) {
+      const monster = monsters[j];
+      const dx = proj.x - monster.x;
+      const dy = proj.y - monster.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      if (distance < 20) {
+        // Zásah příšery
+        monster.health -= 1;
+        if (monster.health <= 0) {
+          monsters.splice(j, 1);
+          // Zvýšení skóre hráče, který příšeru zasáhl
+          if (players[proj.ownerId]) {
+            players[proj.ownerId].score += 1;
+          }
+          // Spawn nové příšery
+          spawnNewMonster();
         }
+        projectiles.splice(i, 1);
+        break;
       }
     }
 
@@ -140,9 +201,16 @@ setInterval(() => {
     }
   }
 
+  // Pohyb příšer směrem k náhodnému bodu
+  for (let monster of monsters) {
+    monster.x += (Math.random() - 0.5) * 2;
+    monster.y += (Math.random() - 0.5) * 2;
+  }
+
   // Odeslání aktualizací klientům
   io.emit('updatePlayers', players);
   io.emit('updateProjectiles', projectiles);
+  io.emit('updateMonsters', monsters);
 
 }, 1000 / 60); // 60krát za sekundu
 

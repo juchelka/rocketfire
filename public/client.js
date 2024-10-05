@@ -10,6 +10,7 @@ let keys = {};
 let stars = [];
 let myId = null;
 let projectiles = [];
+let monsters = [];
 
 // Funkce pro změnu velikosti plátna
 function resizeCanvas() {
@@ -25,7 +26,10 @@ document.addEventListener('keydown', (event) => {
   if (event.code === 'ArrowLeft') keys.left = true;
   if (event.code === 'ArrowRight') keys.right = true;
   if (event.code === 'ArrowDown') keys.down = true;
-  if (event.code === 'Space') keys.space = true;
+  if (event.code === 'Space' && keys.space !== true) {
+    keys.space = true;
+    socket.emit('shoot', true); // Zahájit střelbu
+  }
 });
 
 document.addEventListener('keyup', (event) => {
@@ -33,21 +37,22 @@ document.addEventListener('keyup', (event) => {
   if (event.code === 'ArrowLeft') keys.left = false;
   if (event.code === 'ArrowRight') keys.right = false;
   if (event.code === 'ArrowDown') keys.down = false;
-  if (event.code === 'Space') keys.space = false;
+  if (event.code === 'Space') {
+    keys.space = false;
+    socket.emit('shoot', false); // Zastavit střelbu
+  }
 });
 
 // Odesílání vstupu na server
-setInterval(() => {
+function sendInput() {
   socket.emit('movement', keys);
-  if (keys.space) {
-    socket.emit('shoot');
-    keys.space = false; // Zabránění nepřetržité střelbě
-  }
-}, 1000 / 60);
+  requestAnimationFrame(sendInput);
+}
+requestAnimationFrame(sendInput);
 
 // Přijímání aktualizací od serveru
 socket.on('updatePlayers', (serverPlayers) => {
-  players = serverPlayers;
+  players = JSON.parse(JSON.stringify(serverPlayers));
 });
 
 socket.on('updateProjectiles', (serverProjectiles) => {
@@ -60,6 +65,10 @@ socket.on('starPositions', (serverStars) => {
 
 socket.on('yourId', (id) => {
   myId = id;
+});
+
+socket.on('updateMonsters', (serverMonsters) => {
+  monsters = serverMonsters;
 });
 
 // Hlavní herní smyčka
@@ -84,8 +93,8 @@ function gameLoop() {
   }
 
   // Kreslení projektilů
+  context.save();
   for (let proj of projectiles) {
-    context.save();
     context.translate(proj.x - cameraX, proj.y - cameraY);
     context.rotate(proj.angle);
     context.fillStyle = 'red';
@@ -95,7 +104,16 @@ function gameLoop() {
     context.lineTo(-5, 3);
     context.closePath();
     context.fill();
-    context.restore();
+    context.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+  }
+  context.restore();
+
+  // Kreslení příšer
+  for (let monster of monsters) {
+    context.fillStyle = 'green';
+    context.beginPath();
+    context.arc(monster.x - cameraX, monster.y - cameraY, 20, 0, Math.PI * 2);
+    context.fill();
   }
 
   // Kreslení hráčů
@@ -103,6 +121,11 @@ function gameLoop() {
     const player = players[id];
     const screenX = player.x - cameraX;
     const screenY = player.y - cameraY;
+
+    // Culling off-screen players early to improve performance
+    if (screenX + 20 < 0 || screenX - 20 > canvas.width || screenY + 20 < 0 || screenY - 20 > canvas.height) {
+      continue;
+    }
 
     context.save();
     context.translate(screenX, screenY);
@@ -155,7 +178,12 @@ function gameLoop() {
 // Funkce pro zobrazení skóre
 function displayScores() {
   const scoreBoard = document.getElementById('scoreBoard');
-  scoreBoard.innerHTML = '<h2>Skóre</h2>';
+  while (scoreBoard.firstChild) {
+    scoreBoard.removeChild(scoreBoard.firstChild);
+  }
+  const title = document.createElement('h2');
+  title.textContent = 'Skóre';
+  scoreBoard.appendChild(title);
   for (let id in players) {
     const player = players[id];
     const playerName = id === myId ? 'Ty' : `Hráč ${id.substring(0, 4)}`;
