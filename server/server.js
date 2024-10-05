@@ -1,4 +1,5 @@
 // server/server.js
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
@@ -215,6 +216,7 @@ setInterval(() => {
 }, 1000 / 60); // 60krát za sekundu
 
 // Spuštění serveru
-server.listen(3000, () => {
-  console.log('Server běží na portu 3000');
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Server běží na portu ${PORT}`);
 });
