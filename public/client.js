@@ -35,7 +35,7 @@ socket.on('syncTimeResponse', (serverTime, t0) => {
 socket.on('updatePlayers', gameState.updatePlayers);
 socket.on('updateProjectiles', gameState.updateProjectiles);
 socket.on('starPositions', gameState.updateStars);
-socket.on('yourId', (id) => gameState.myId = id);
+socket.on('yourId', (id) => gameState.setMyId(id));
 socket.on('updateMonsters', gameState.updateMonsters);
 socket.on('serverDiagnostics', gameState.updateDiagnostics);
 

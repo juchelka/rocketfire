@@ -1,7 +1,11 @@
 // public/render.js
-import { players, projectiles, monsters, stars, myId, ping, cycleCount } from './gameState.js';
+import { players, projectiles, monsters, stars, getMyId, ping, cycleCount } from './gameState.js';
+
+let canvasWidth, canvasHeight;
 
 export function gameLoop(canvas, context) {
+    canvasWidth = canvas.width;
+    canvasHeight = canvas.height;
     context.clearRect(0, 0, canvas.width, canvas.height);
 
     const camera = getCameraPosition();
@@ -19,9 +23,10 @@ export function gameLoop(canvas, context) {
 function getCameraPosition() {
     let cameraX = 0;
     let cameraY = 0;
+    const myId = getMyId();
     if (myId && players[myId]) {
-        cameraX = players[myId].x - canvas.width / 2;
-        cameraY = players[myId].y - canvas.height / 2;
+        cameraX = players[myId].x - canvasWidth / 2;
+        cameraY = players[myId].y - canvasHeight / 2;
     }
     return { x: cameraX, y: cameraY };
 }
@@ -75,7 +80,7 @@ function drawPlayers(context, camera) {
         const screenX = player.x - camera.x;
         const screenY = player.y - camera.y;
 
-        if (screenX + 20 < 0 || screenX - 20 > canvas.width || screenY + 20 < 0 || screenY - 20 > canvas.height) {
+        if (screenX + 20 < 0 || screenX - 20 > canvasWidth || screenY + 20 < 0 || screenY - 20 > canvasHeight) {
             continue;
         }
 
@@ -94,6 +99,7 @@ function drawPlayers(context, camera) {
 }
 
 function drawOffscreenPlayerArrows(canvas, context, camera) {
+    const myId = getMyId();
     for (let id in players) {
         if (id !== myId) {
             const player = players[id];

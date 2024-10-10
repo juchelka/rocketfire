@@ -3,7 +3,13 @@ export let players = {};
 export let projectiles = [];
 export let monsters = [];
 export let stars = [];
-export let myId = null;
+let myId = null;
+export function setMyId(id) {
+    myId = id;
+}
+export function getMyId() {
+    return myId;
+}
 export let ping = 0;
 export let cycleCount = 0;
 export let timeOffset = 0;
