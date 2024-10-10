@@ -132,7 +132,7 @@ function gameLoop() {
   for (let proj of projectiles) {
     context.translate(proj.x - cameraX, proj.y - cameraY);
     context.rotate(proj.angle);
-    context.fillStyle = 'red';
+    context.fillStyle = proj.ownerId === 'monster' ? 'yellow' : 'red'; // Změna barvy pro střely příšer na žlutou
     context.beginPath();
     context.moveTo(5, 0);
     context.lineTo(-5, -3);
@@ -212,6 +212,9 @@ function gameLoop() {
   context.font = '16px Arial';
   context.fillText(`Ping: ${ping.toFixed(2)} ms`, 10, 20);
   context.fillText(`Server: ${cycleCount}/s of 60`, 10, 40);
+  if (myId && players[myId]) {
+    context.fillText(`Zásahy: ${players[myId].hits || 0}`, 10, 60);
+  }
 
   requestAnimationFrame(gameLoop);
 }

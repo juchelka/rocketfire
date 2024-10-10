@@ -50,7 +50,8 @@ function createMonster() {
   return {
     x: Math.random() * 2000 - 1000,
     y: Math.random() * 2000 - 1000,
-    health: 3, // Nová příšera má 3 životy
+    health: 3,
+    lastShot: 0, // Čas poslední střely
   };
 }
 
@@ -64,15 +65,31 @@ function createStar() {
 }
 
 // Funkce pro vytvoření nového projektilu
-function createProjectile(player) {
+function createProjectile(x, y, angle, ownerId) {
   return {
-    x: player.x,
-    y: player.y,
-    startX: player.x,
-    startY: player.y,
-    angle: player.angle,
-    ownerId: player.id,
+    x: x,
+    y: y,
+    startX: x,
+    startY: y,
+    angle: angle,
+    ownerId: ownerId,
+    speed: ownerId === 'monster' ? 10 : 20, // Poloviční rychlost pro střely monster
   };
+}
+
+// Funkce pro nalezení nejbližšího hráče k monsteru
+function findClosestPlayer(monster) {
+  let closestPlayer = null;
+  let closestDistance = Infinity;
+  for (let playerId in players) {
+    const player = players[playerId];
+    const distance = Math.sqrt(Math.pow(player.x - monster.x, 2) + Math.pow(player.y - monster.y, 2));
+    if (distance < closestDistance) {
+      closestDistance = distance;
+      closestPlayer = player;
+    }
+  }
+  return closestPlayer;
 }
 
 io.on('connection', (socket) => {
@@ -124,13 +141,13 @@ io.on('connection', (socket) => {
     const player = players[socket.id];
     if (isShooting && player) {
       // Okamžitě vystřelit první střelu
-      shootProjectile(player);
+      shootProjectile(player.x, player.y, player.angle, socket.id);
       // Zahájit interval pro další střely
       if (!shootingInterval) {
         shootingInterval = setInterval(() => {
           const currentPlayer = players[socket.id];
           if (currentPlayer) {
-            shootProjectile(currentPlayer);
+            shootProjectile(currentPlayer.x, currentPlayer.y, currentPlayer.angle, socket.id);
           }
         }, 250); // 4 střely za sekundu (250 ms mezi střelami)
       }
@@ -165,8 +182,8 @@ function createPlayer(id) {
 }
 
 // Funkce pro vystřelení projektilu
-function shootProjectile(player) {
-  projectiles.push(createProjectile(player));
+function shootProjectile(x, y, angle, ownerId) {
+  projectiles.push(createProjectile(x, y, angle, ownerId));
 }
 
 // Herní smyčka
@@ -175,8 +192,8 @@ setInterval(() => {
   // Pohyb projektilů
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const proj = projectiles[i];
-    proj.x += Math.cos(proj.angle) * 20;
-    proj.y += Math.sin(proj.angle) * 20;
+    proj.x += Math.cos(proj.angle) * proj.speed;
+    proj.y += Math.sin(proj.angle) * proj.speed;
 
     // Kontrola kolize s příšerami
     for (let j = monsters.length - 1; j >= 0; j--) {
@@ -184,7 +201,7 @@ setInterval(() => {
       const dx = proj.x - monster.x;
       const dy = proj.y - monster.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
-      if (distance < 20) {
+      if (distance < 20 && proj.ownerId !== 'monster') {
         // Zásah příšery
         monster.health -= 1;
         if (monster.health <= 0) {
@@ -201,6 +218,23 @@ setInterval(() => {
       }
     }
 
+    // Kontrola kolize s hráči (pouze pro střely monster)
+    if (proj.ownerId === 'monster') {
+      for (let playerId in players) {
+        const player = players[playerId];
+        const dx = proj.x - player.x;
+        const dy = proj.y - player.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance < 20) {
+          // Zásah hráče
+          player.score = Math.max(0, player.score - 1); // Snížení skóre hráče (minimum 0)
+          player.hits = (player.hits || 0) + 1; // Přidání počtu zásahů
+          projectiles.splice(i, 1);
+          break;
+        }
+      }
+    }
+
     // Odstranění projektilu po překročení dostřelu
     const dxProj = proj.x - proj.startX;
     const dyProj = proj.y - proj.startY;
@@ -211,10 +245,21 @@ setInterval(() => {
     }
   }
 
-  // Pohyb příšer směrem k náhodnému bodu
+  // Pohyb příšer směrem k náhodnému bodu a střelba
+  const currentTime = Date.now();
   for (let monster of monsters) {
     monster.x += (Math.random() - 0.5) * 2;
     monster.y += (Math.random() - 0.5) * 2;
+
+    // Střelba monsters
+    if (currentTime - monster.lastShot > 2000) { // Střílí každé 2 sekundy
+      const closestPlayer = findClosestPlayer(monster);
+      if (closestPlayer) {
+        const angle = Math.atan2(closestPlayer.y - monster.y, closestPlayer.x - monster.x);
+        shootProjectile(monster.x, monster.y, angle, 'monster');
+        monster.lastShot = currentTime;
+      }
+    }
   }
 
   // Odeslání aktualizací klientům

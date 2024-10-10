@@ -15,10 +15,8 @@ require_once __DIR__ . "/PrompterHelper.php";
 
 Máme takovou hru v Javascriptu. Funguje výborně.
 
-Chtěli bychom aby herní canvas zabíral celou výšku viewportu a 80% šířky.
+Ve hře střílejí i monstra, ale střely monster lítají moc rychle. Potřebujeme aby střely monster byly žluté a lítaly poloviční rychlostí.
+Zároveň by se u hráče měl započítávat počet zásahů monstrem.
 
-Naváděcí šipka, která ukazuje pozici soupeře, který se nevleze na canvas by měla mít alfu 50%.
-
-Omezení vzdálenosti střely je implementováno špatně, takto funguje střílení jen v určité oblasti.
-Mělo by to být udělané tak, že střela bude mít definovaný dostřel třeba 1000 a při vystřelení si zapamatuje souřadnice, 
-odkud byla vypálena a jakmile její pozice bude vzdálená od místa vypálení víc než 1000 tak střela zanikne.
+Vyvtoř PHP script, který provede úpravy tím, že nahradí části potřebných souborů. 
+Dej si pozor na správné escapování a použíj <<<'EOD' pro části kódu.
