@@ -26,8 +26,10 @@ resizeCanvas();
 // Vstup hráče
 document.addEventListener('keydown', (event) => {
   if (event.code === 'ArrowUp' || event.code === 'KeyW') keys.up = true;
-  if (event.code === 'ArrowLeft' || event.code === 'KeyA') keys.left = true;
-  if (event.code === 'ArrowRight' || event.code === 'KeyD') keys.right = true;
+  if (event.code === 'KeyA') keys.left = true; // Sidestep left
+  if (event.code === 'KeyD') keys.right = true; // Sidestep right
+  if (event.code === 'ArrowLeft') keys.rotateLeft = true; // Rotate left
+  if (event.code === 'ArrowRight') keys.rotateRight = true; // Rotate right
   if (event.code === 'ArrowDown' || event.code === 'KeyS') keys.down = true;
   if (event.code === 'Space' && keys.space !== true) {
     keys.space = true;
@@ -37,8 +39,10 @@ document.addEventListener('keydown', (event) => {
 
 document.addEventListener('keyup', (event) => {
   if (event.code === 'ArrowUp' || event.code === 'KeyW') keys.up = false;
-  if (event.code === 'ArrowLeft' || event.code === 'KeyA') keys.left = false;
-  if (event.code === 'ArrowRight' || event.code === 'KeyD') keys.right = false;
+  if (event.code === 'KeyA') keys.left = false;
+  if (event.code === 'KeyD') keys.right = false;
+  if (event.code === 'ArrowLeft') keys.rotateLeft = false;
+  if (event.code === 'ArrowRight') keys.rotateRight = false;
   if (event.code === 'ArrowDown' || event.code === 'KeyS') keys.down = false;
   if (event.code === 'Space') {
     keys.space = false;

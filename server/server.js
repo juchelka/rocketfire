@@ -128,10 +128,10 @@ io.on('connection', (socket) => {
   socket.on('movement', (data) => {
     const player = players[socket.id];
     if (player) {
-      if (data.left) {
+      if (data.rotateLeft) {
         player.angle -= 0.05;
       }
-      if (data.right) {
+      if (data.rotateRight) {
         player.angle += 0.05;
       }
       if (data.up) {
@@ -141,6 +141,14 @@ io.on('connection', (socket) => {
       if (data.down) {
         player.x -= Math.cos(player.angle) * 5;
         player.y -= Math.sin(player.angle) * 5;
+      }
+      if (data.left) {
+        player.x += Math.cos(player.angle - Math.PI / 2) * 5;
+        player.y += Math.sin(player.angle - Math.PI / 2) * 5;
+      }
+      if (data.right) {
+        player.x += Math.cos(player.angle + Math.PI / 2) * 5;
+        player.y += Math.sin(player.angle + Math.PI / 2) * 5;
       }
     }
   });
