@@ -1,16 +1,18 @@
 <?php
 
-// Funkce pro aktualizaci souboru
-function updateFile($filename, $search, $replace) {
+// Funkce pro aktualizaci souboru s kontrolou počtu nahrazení
+function updateFile($filename, $search, $replace, $expectedCount = 1) {
     $content = file_get_contents($filename);
-    $content = str_replace($search, $replace, $content);
-    file_put_contents($filename, $content);
-    echo "Updated $filename\n";
+    $newContent = str_replace($search, $replace, $content, $count);
+    if ($count !== $expectedCount) {
+        echo "Varování: V souboru $filename bylo provedeno $count nahrazení místo očekávaných $expectedCount.\n";
+    }
+    file_put_contents($filename, $newContent);
+    echo "Aktualizován soubor $filename ($count nahrazení)\n";
 }
 
-// Aktualizace server/server.js
+// Úprava server/server.js pro poloviční rychlost střel monster
 $serverSearch = <<<'EOD'
-// Funkce pro vytvoření nového projektilu
 function createProjectile(x, y, angle, ownerId) {
   return {
     x: x,
@@ -24,7 +26,6 @@ function createProjectile(x, y, angle, ownerId) {
 EOD;
 
 $serverReplace = <<<'EOD'
-// Funkce pro vytvoření nového projektilu
 function createProjectile(x, y, angle, ownerId) {
   return {
     x: x,
@@ -40,46 +41,8 @@ EOD;
 
 updateFile('server/server.js', $serverSearch, $serverReplace);
 
-// Další aktualizace server/server.js pro počítání zásahů
+// Úprava server/server.js pro použití rychlosti projektilů
 $serverSearch2 = <<<'EOD'
-    if (proj.ownerId === 'monster') {
-      for (let playerId in players) {
-        const player = players[playerId];
-        const dx = proj.x - player.x;
-        const dy = proj.y - player.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        if (distance < 20) {
-          // Zásah hráče
-          player.score = Math.max(0, player.score - 1); // Snížení skóre hráče (minimum 0)
-          projectiles.splice(i, 1);
-          break;
-        }
-      }
-    }
-EOD;
-
-$serverReplace2 = <<<'EOD'
-    if (proj.ownerId === 'monster') {
-      for (let playerId in players) {
-        const player = players[playerId];
-        const dx = proj.x - player.x;
-        const dy = proj.y - player.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        if (distance < 20) {
-          // Zásah hráče
-          player.score = Math.max(0, player.score - 1); // Snížení skóre hráče (minimum 0)
-          player.hits = (player.hits || 0) + 1; // Přidání počtu zásahů
-          projectiles.splice(i, 1);
-          break;
-        }
-      }
-    }
-EOD;
-
-updateFile('server/server.js', $serverSearch2, $serverReplace2);
-
-// Aktualizace server/server.js pro pohyb projektilů
-$serverSearch3 = <<<'EOD'
   // Pohyb projektilů
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const proj = projectiles[i];
@@ -87,7 +50,7 @@ $serverSearch3 = <<<'EOD'
     proj.y += Math.sin(proj.angle) * 20;
 EOD;
 
-$serverReplace3 = <<<'EOD'
+$serverReplace2 = <<<'EOD'
   // Pohyb projektilů
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const proj = projectiles[i];
@@ -95,9 +58,9 @@ $serverReplace3 = <<<'EOD'
     proj.y += Math.sin(proj.angle) * proj.speed;
 EOD;
 
-updateFile('server/server.js', $serverSearch3, $serverReplace3);
+updateFile('server/server.js', $serverSearch2, $serverReplace2);
 
-// Aktualizace public/client.js
+// Úprava public/client.js pro změnu barvy střel monster na žlutou
 $clientSearch = <<<'EOD'
     context.fillStyle = proj.ownerId === 'monster' ? 'purple' : 'red'; // Změna barvy pro střely příšer
 EOD;
@@ -108,17 +71,25 @@ EOD;
 
 updateFile('public/client.js', $clientSearch, $clientReplace);
 
-// Aktualizace public/client.js pro zobrazení počtu zásahů
+// Úprava public/client.js pro změnu barvy hvězd na světle šedou
 $clientSearch2 = <<<'EOD'
-  // Zobrazení diagnostických dat
-  context.fillStyle = 'white';
-  context.font = '16px Arial';
-  context.fillText(`Ping: ${ping.toFixed(2)} ms`, 10, 20);
-  context.fillText(`Server: ${cycleCount}/s of 60`, 10, 40);
+  // Kreslení hvězd
+  for (let star of stars) {
+    context.fillStyle = 'yellow';
+    context.beginPath();
 EOD;
 
 $clientReplace2 = <<<'EOD'
-  // Zobrazení diagnostických dat
+  // Kreslení hvězd
+  for (let star of stars) {
+    context.fillStyle = 'lightgray';
+    context.beginPath();
+EOD;
+
+updateFile('public/client.js', $clientSearch2, $clientReplace2);
+
+// Úprava public/client.js pro odstranění zobrazení zásahů z canvasu
+$clientSearch3 = <<<'EOD'
   context.fillStyle = 'white';
   context.font = '16px Arial';
   context.fillText(`Ping: ${ping.toFixed(2)} ms`, 10, 20);
@@ -128,6 +99,54 @@ $clientReplace2 = <<<'EOD'
   }
 EOD;
 
-updateFile('public/client.js', $clientSearch2, $clientReplace2);
+$clientReplace3 = <<<'EOD'
+  context.fillStyle = 'white';
+  context.font = '16px Arial';
+  context.fillText(`Ping: ${ping.toFixed(2)} ms`, 10, 20);
+  context.fillText(`Server: ${cycleCount}/s of 60`, 10, 40);
+EOD;
 
-echo "Úpravy byly úspěšně provedeny.\n";
+updateFile('public/client.js', $clientSearch3, $clientReplace3);
+
+// Úprava public/client.js pro přidání zobrazení zásahů do scoreBoard
+$clientSearch4 = <<<'EOD'
+function displayScores() {
+  const scoreBoard = document.getElementById('scoreBoard');
+  while (scoreBoard.firstChild) {
+    scoreBoard.removeChild(scoreBoard.firstChild);
+  }
+  const title = document.createElement('h2');
+  title.textContent = 'Skóre';
+  scoreBoard.appendChild(title);
+  for (let id in players) {
+    const player = players[id];
+    const playerName = id === myId ? 'Ty' : `Hráč ${id.substring(0, 4)}`;
+    const scoreEntry = document.createElement('div');
+    scoreEntry.textContent = `${playerName}: ${player.score}`;
+    scoreEntry.style.color = player.color || 'white';
+    scoreBoard.appendChild(scoreEntry);
+  }
+}
+EOD;
+
+$clientReplace4 = <<<'EOD'
+function displayScores() {
+  const scoreBoard = document.getElementById('scoreBoard');
+  while (scoreBoard.firstChild) {
+    scoreBoard.removeChild(scoreBoard.firstChild);
+  }
+  const title = document.createElement('h2');
+  title.textContent = 'Skóre';
+  scoreBoard.appendChild(title);
+  for (let id in players) {
+    const player = players[id];
+    const playerName = id === myId ? 'Ty' : `Hráč ${id.substring(0, 4)}`;
+    const scoreEntry = document.createElement('div');
+    scoreEntry.textContent = `${playerName}: ${player.score} (Zásahy: ${player.hits || 0})`;
+    scoreEntry.style.color = player.color || 'white';
+    scoreBoard.appendChild(scoreEntry);
+  }
+}
+EOD;
+
+updateFile('public/client.js', $clientSearch4, $clientReplace4);

@@ -73,7 +73,7 @@ function createProjectile(x, y, angle, ownerId) {
     startY: y,
     angle: angle,
     ownerId: ownerId,
-    speed: ownerId === 'monster' ? 10 : 20, // Poloviční rychlost pro střely monster
+    speed: ownerId === 'monster' ? 5 : 20, // Poloviční rychlost pro střely monster
   };
 }
 

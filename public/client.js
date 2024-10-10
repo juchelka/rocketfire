@@ -121,7 +121,7 @@ function gameLoop() {
 
   // Kreslení hvězd
   for (let star of stars) {
-    context.fillStyle = 'yellow';
+    context.fillStyle = 'lightgray';
     context.beginPath();
     context.arc(star.x - cameraX, star.y - cameraY, star.size, 0, Math.PI * 2);
     context.fill();
@@ -212,9 +212,6 @@ function gameLoop() {
   context.font = '16px Arial';
   context.fillText(`Ping: ${ping.toFixed(2)} ms`, 10, 20);
   context.fillText(`Server: ${cycleCount}/s of 60`, 10, 40);
-  if (myId && players[myId]) {
-    context.fillText(`Zásahy: ${players[myId].hits || 0}`, 10, 60);
-  }
 
   requestAnimationFrame(gameLoop);
 }
@@ -232,7 +229,7 @@ function displayScores() {
     const player = players[id];
     const playerName = id === myId ? 'Ty' : `Hráč ${id.substring(0, 4)}`;
     const scoreEntry = document.createElement('div');
-    scoreEntry.textContent = `${playerName}: ${player.score}`;
+    scoreEntry.textContent = `${playerName}: ${player.score} (Zásahy: ${player.hits || 0})`;
     scoreEntry.style.color = player.color || 'white';
     scoreBoard.appendChild(scoreEntry);
   }
