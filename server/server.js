@@ -4,7 +4,7 @@ const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
 const { performance } = require('perf_hooks');
-const { players, projectiles, monsters, stars, createPlayer, createMonster } = require('./gameState');
+const { players, projectiles, monsters, stars, createPlayer, createMonster, createProjectile } = require('./gameState');
 const { updateGameState } = require('./gameLogic');
 
 // Inicializace serveru
