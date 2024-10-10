@@ -4,6 +4,9 @@ import { gameLoop } from './render.js';
 import * as gameState from './gameState.js';
 
 const socket = io();
+
+// Expose socket to window for the change name button
+window.socket = socket;
 const canvas = document.getElementById('gameCanvas');
 const context = canvas.getContext('2d');
 
