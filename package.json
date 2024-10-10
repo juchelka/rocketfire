@@ -3,6 +3,13 @@
     "version": "1.0.0",
     "description": "Jednoduchá 2D multiplayerová hra v JavaScriptu",
     "main": "server/server.js",
+    "files": [
+        "server/gameState.js",
+        "server/gameLogic.js",
+        "public/gameState.js",
+        "public/input.js",
+        "public/render.js"
+    ],
     "scripts": {
         "start": "node server/server.js"
     },
