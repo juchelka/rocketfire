@@ -133,7 +133,7 @@ function displayScores() {
     scoreBoard.innerHTML = '<h2>Skóre</h2>';
     for (let id in players) {
         const player = players[id];
-        const playerName = player.name || (id === myId ? 'Ty' : `Hráč ${id.substring(0, 4)}`);
+        const playerName = player.name || (id === getMyId() ? 'Ty' : `Hráč ${id.substring(0, 4)}`);
         const scoreEntry = document.createElement('div');
         scoreEntry.textContent = `${playerName}: ${player.score} (Zásahy M: ${player.monsterHits || 0}, Zásahy H: ${player.hits || 0})`;
         scoreEntry.style.color = player.color || 'white';
