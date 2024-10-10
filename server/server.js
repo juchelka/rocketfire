@@ -51,7 +51,9 @@ function createMonster() {
     x: Math.random() * 2000 - 1000,
     y: Math.random() * 2000 - 1000,
     health: 3,
+    maxHealth: 3,
     lastShot: 0, // Čas poslední střely
+    shootInterval: Math.floor(Math.random() * 5000) + 3000, // Náhodný interval 3-8 sekund
   };
 }
 
@@ -97,6 +99,14 @@ io.on('connection', (socket) => {
 
   // Přidání nového hráče do hry
   players[socket.id] = createPlayer(socket.id);
+
+  // Přijetí jména hráče
+  socket.on('setName', (name) => {
+    if (players[socket.id]) {
+      players[socket.id].name = name;
+      io.emit('updatePlayers', players);
+    }
+  });  
 
   // Odeslání aktuálního stavu novému hráči
   socket.emit('updatePlayers', players);
@@ -209,6 +219,7 @@ setInterval(() => {
           // Zvýšení skóre hráče, který příšeru zasáhl
           if (players[proj.ownerId]) {
             players[proj.ownerId].score += 1;
+            players[proj.ownerId].monsterHits = (players[proj.ownerId].monsterHits || 0) + 1;
           }
           // Spawn nové příšery
           spawnNewMonster();
@@ -227,8 +238,8 @@ setInterval(() => {
         const distance = Math.sqrt(dx * dx + dy * dy);
         if (distance < 20) {
           // Zásah hráče
-          player.score = Math.max(0, player.score - 1); // Snížení skóre hráče (minimum 0)
           player.hits = (player.hits || 0) + 1; // Přidání počtu zásahů
+          player.score = (player.monsterHits || 0) - player.hits; // Aktualizace skóre
           projectiles.splice(i, 1);
           break;
         }
@@ -252,12 +263,13 @@ setInterval(() => {
     monster.y += (Math.random() - 0.5) * 2;
 
     // Střelba monsters
-    if (currentTime - monster.lastShot > 2000) { // Střílí každé 2 sekundy
+    if (currentTime - monster.lastShot > monster.shootInterval) {
       const closestPlayer = findClosestPlayer(monster);
       if (closestPlayer) {
         const angle = Math.atan2(closestPlayer.y - monster.y, closestPlayer.x - monster.x);
         shootProjectile(monster.x, monster.y, angle, 'monster');
         monster.lastShot = currentTime;
+        monster.shootInterval = Math.floor(Math.random() * 5000) + 3000; // Náhodný interval 3-8 sekund
       }
     }
   }

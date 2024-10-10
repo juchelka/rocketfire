@@ -25,10 +25,10 @@ resizeCanvas();
 
 // Vstup hráče
 document.addEventListener('keydown', (event) => {
-  if (event.code === 'ArrowUp') keys.up = true;
-  if (event.code === 'ArrowLeft') keys.left = true;
-  if (event.code === 'ArrowRight') keys.right = true;
-  if (event.code === 'ArrowDown') keys.down = true;
+  if (event.code === 'ArrowUp' || event.code === 'KeyW') keys.up = true;
+  if (event.code === 'ArrowLeft' || event.code === 'KeyA') keys.left = true;
+  if (event.code === 'ArrowRight' || event.code === 'KeyD') keys.right = true;
+  if (event.code === 'ArrowDown' || event.code === 'KeyS') keys.down = true;
   if (event.code === 'Space' && keys.space !== true) {
     keys.space = true;
     socket.emit('shoot', true); // Zahájit střelbu
@@ -36,10 +36,10 @@ document.addEventListener('keydown', (event) => {
 });
 
 document.addEventListener('keyup', (event) => {
-  if (event.code === 'ArrowUp') keys.up = false;
-  if (event.code === 'ArrowLeft') keys.left = false;
-  if (event.code === 'ArrowRight') keys.right = false;
-  if (event.code === 'ArrowDown') keys.down = false;
+  if (event.code === 'ArrowUp' || event.code === 'KeyW') keys.up = false;
+  if (event.code === 'ArrowLeft' || event.code === 'KeyA') keys.left = false;
+  if (event.code === 'ArrowRight' || event.code === 'KeyD') keys.right = false;
+  if (event.code === 'ArrowDown' || event.code === 'KeyS') keys.down = false;
   if (event.code === 'Space') {
     keys.space = false;
     socket.emit('shoot', false); // Zastavit střelbu
@@ -149,6 +149,15 @@ function gameLoop() {
     context.beginPath();
     context.arc(monster.x - cameraX, monster.y - cameraY, 20, 0, Math.PI * 2);
     context.fill();
+
+    // Kreslení health baru
+    const barWidth = 40;
+    const barHeight = 5;
+    const healthPercentage = monster.health / monster.maxHealth;
+    context.fillStyle = 'red';
+    context.fillRect(monster.x - cameraX - barWidth / 2, monster.y - cameraY - 30, barWidth, barHeight);
+    context.fillStyle = 'green';
+    context.fillRect(monster.x - cameraX - barWidth / 2, monster.y - cameraY - 30, barWidth * healthPercentage, barHeight);
   }
 
   // Kreslení hráčů
@@ -227,11 +236,23 @@ function displayScores() {
   scoreBoard.appendChild(title);
   for (let id in players) {
     const player = players[id];
-    const playerName = id === myId ? 'Ty' : `Hráč ${id.substring(0, 4)}`;
+    const playerName = player.name || (id === myId ? 'Ty' : `Hráč ${id.substring(0, 4)}`);
     const scoreEntry = document.createElement('div');
-    scoreEntry.textContent = `${playerName}: ${player.score} (Zásahy: ${player.hits || 0})`;
+    scoreEntry.textContent = `${playerName}: ${player.score} (Zásahy M: ${player.monsterHits || 0}, Zásahy H: ${player.hits || 0})`;
     scoreEntry.style.color = player.color || 'white';
     scoreBoard.appendChild(scoreEntry);
+  }
+}
+
+// Načtení jména z local storage a odeslání na server
+const playerName = localStorage.getItem('playerName');
+if (playerName) {
+  socket.emit('setName', playerName);
+} else {
+  const name = prompt('Zadejte své jméno:');
+  if (name) {
+    localStorage.setItem('playerName', name);
+    socket.emit('setName', name);
   }
 }
 
