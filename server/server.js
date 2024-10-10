@@ -143,12 +143,12 @@ io.on('connection', (socket) => {
         player.y -= Math.sin(player.angle) * 5;
       }
       if (data.left) {
-        player.x += Math.cos(player.angle - Math.PI / 2) * 5;
-        player.y += Math.sin(player.angle - Math.PI / 2) * 5;
+        player.x += Math.cos(player.angle - Math.PI / 2) * 2;
+        player.y += Math.sin(player.angle - Math.PI / 2) * 2;
       }
       if (data.right) {
-        player.x += Math.cos(player.angle + Math.PI / 2) * 5;
-        player.y += Math.sin(player.angle + Math.PI / 2) * 5;
+        player.x += Math.cos(player.angle + Math.PI / 2) * 2;
+        player.y += Math.sin(player.angle + Math.PI / 2) * 2;
       }
     }
   });
