@@ -3,7 +3,7 @@ function updateFile($filename, $search, $replace, $expectedCount = 1) {
     $content = file_get_contents($filename);
     $newContent = str_replace($search, $replace, $content, $count);
     if ($count !== $expectedCount) {
-      echo "\nReplacement in file $filename \n-------\n$search\n--- by ---\n$replace\n-------\nfailed. Found $count occurrences instead of $expectedCount.\n";
+      fwrite(STDERR, "\nReplacement in file $filename \n-------\n$search\n--- by ---\n$replace\n-------\nfailed. Found $count occurrences instead of $expectedCount.\n");
       return false;
     } else {
       file_put_contents($filename, $newContent);
@@ -129,7 +129,7 @@ $allDone &= updateFile('server/server.js', $serverSearch, $serverReplace);
 if ($allDone) {
   echo "\nOK. All changes have been made.\n";
 } else {
-  echo "\nError: Some changes could not be made.\n";
+  fwrite(STDERR, "\nError: Some changes could not be made.\n");
 }
 
 // Suggested commit message:
